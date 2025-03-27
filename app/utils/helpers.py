@@ -7,17 +7,37 @@ def preprocess_image(image):
     Preprocess image for handwriting recognition
     
     Args:
-        image: PIL Image or numpy array representing the drawn image
+        image: PIL Image, numpy array or dictionary representing the drawn image
         
     Returns:
         Preprocessed image ready for model input
     """
     if image is None:
         return None
-        
+    
+    # Handle dictionary format from newer Gradio versions
+    if isinstance(image, dict):
+        # Check if 'image' key exists (from gr.Paint)
+        if 'image' in image:
+            image = image['image']
+        # For other formats, try common keys
+        elif 'value' in image:
+            image = image['value']
+        else:
+            # Return first value if we can't identify the right key
+            for key in image:
+                if isinstance(image[key], (np.ndarray, Image.Image)):
+                    image = image[key]
+                    break
+    
     # Convert to numpy array if it's a PIL Image
     if isinstance(image, Image.Image):
         image = np.array(image)
+    
+    # Make sure we actually have an image to process
+    if not isinstance(image, np.ndarray):
+        print(f"Unexpected image type: {type(image)}")
+        return None
     
     # Check if image is already grayscale or RGB
     if len(image.shape) == 2:
